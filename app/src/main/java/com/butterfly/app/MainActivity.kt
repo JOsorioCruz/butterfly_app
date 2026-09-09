@@ -17,14 +17,19 @@ import com.butterfly.app.auth.AlmacenDeSesion
 import com.butterfly.app.auth.AutenticacionGoogle
 import com.butterfly.app.auth.ResultadoAutorizacion
 import com.butterfly.app.auth.ResultadoLogin
+import com.butterfly.app.datos.HojaDeVentas
+import com.butterfly.app.datos.ResultadoGuardado
+import com.butterfly.app.datos.nuevoIdDeRegistro
 import com.butterfly.app.ia.InterpretePorIA
 import com.butterfly.app.ia.ResultadoInterpretacion
 import com.butterfly.app.ia.ejecutarBancoDePruebas
+import com.butterfly.app.ui.EstadoDeGuardado
 import com.butterfly.app.ui.PantallaLogin
 import com.butterfly.app.ui.PantallaPruebas
 import com.butterfly.app.ui.ResultadoDeCaso
 import com.butterfly.app.ui.PantallaPrincipal
 import com.butterfly.app.ui.theme.TemaButterfly
+import com.butterfly.app.util.resumenDeVenta
 import kotlinx.coroutines.launch
 
 class MainActivity : ComponentActivity() {
@@ -36,6 +41,7 @@ class MainActivity : ComponentActivity() {
         val autenticacion = AutenticacionGoogle(this)
         val almacen = AlmacenDeSesion(this)
         val interprete = InterpretePorIA()
+        val hoja = HojaDeVentas(this)
 
         setContent {
             TemaButterfly {
@@ -48,9 +54,10 @@ class MainActivity : ComponentActivity() {
                 var cargando by remember { mutableStateOf(false) }
                 var mensajeDeError by remember { mutableStateOf<String?>(null) }
 
-                // Tarea 3: interpretacion del texto con la IA.
-                var interpretando by remember { mutableStateOf(false) }
-                var resultado by remember { mutableStateOf<ResultadoInterpretacion?>(null) }
+                // Tareas 3 y 4: interpretar el texto y escribirlo en la hoja.
+                var estadoDeGuardado by remember {
+                    mutableStateOf<EstadoDeGuardado>(EstadoDeGuardado.Inactivo)
+                }
 
                 // Validacion B: solo en la version de depuracion.
                 var enPantallaDePruebas by remember { mutableStateOf(false) }
@@ -146,14 +153,12 @@ class MainActivity : ComponentActivity() {
                     PantallaPrincipal(
                         correo = sesionActual.correo,
                         autorizado = tokenDeAcceso != null,
-                        interpretando = interpretando,
-                        resultado = resultado,
-                        onInterpretar = { texto ->
-                            interpretando = true
-                            resultado = null
+                        estado = estadoDeGuardado,
+                        onGuardar = { texto ->
+                            estadoDeGuardado = EstadoDeGuardado.Trabajando
                             alcance.launch {
-                                resultado = interprete.interpretar(texto)
-                                interpretando = false
+                                estadoDeGuardado =
+                                    interpretarYGuardar(texto, interprete, hoja, tokenDeAcceso)
                             }
                         },
                         onProbarEjemplos = { enPantallaDePruebas = true },
@@ -169,6 +174,46 @@ class MainActivity : ComponentActivity() {
                     )
                 }
 
+            }
+        }
+    }
+
+    /**
+     * Las dos etapas que para la dueña son una sola accion: la IA lee el texto y, si
+     * quedo completo, la venta se escribe en la hoja.
+     *
+     * Si algo falla en cualquiera de las dos, NO se crea ninguna fila (punto 9).
+     */
+    private suspend fun interpretarYGuardar(
+        texto: String,
+        interprete: InterpretePorIA,
+        hoja: HojaDeVentas,
+        token: String?,
+    ): EstadoDeGuardado = when (val lectura = interprete.interpretar(texto)) {
+        is ResultadoInterpretacion.Incompleta ->
+            EstadoDeGuardado.Incompleta(lectura.venta.datosQueFaltan.joinToString(" y "))
+
+        ResultadoInterpretacion.NoEsUnaVenta -> EstadoDeGuardado.NoEsUnaVenta
+
+        is ResultadoInterpretacion.Fallo -> EstadoDeGuardado.Error(lectura.mensaje)
+
+        is ResultadoInterpretacion.Completa -> {
+            val resumen = resumenDeVenta(lectura.venta)
+            if (token == null) {
+                EstadoDeGuardado.Error(
+                    "Falta el permiso para escribir en la hoja. Vuelve a entrar con Google.",
+                )
+            } else {
+                // El identificador se genera ANTES de intentar mandar nada, para que un
+                // reintento pueda reconocer la venta y no duplicarla (Regla 2).
+                val id = nuevoIdDeRegistro()
+                when (val guardado = hoja.guardar(lectura.venta, id, token)) {
+                    ResultadoGuardado.Guardada -> EstadoDeGuardado.Guardada(resumen)
+                    ResultadoGuardado.YaEstaba -> EstadoDeGuardado.YaEstaba(resumen)
+                    is ResultadoGuardado.SinConexion ->
+                        EstadoDeGuardado.SinConexion(guardado.mensaje)
+                    is ResultadoGuardado.Fallo -> EstadoDeGuardado.Error(guardado.mensaje)
+                }
             }
         }
     }

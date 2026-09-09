@@ -39,7 +39,6 @@ import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import com.butterfly.app.BuildConfig
 import com.butterfly.app.R
-import com.butterfly.app.ia.ResultadoInterpretacion
 import com.butterfly.app.modelo.EstadoVenta
 import com.butterfly.app.modelo.VENTAS_DE_EJEMPLO
 import com.butterfly.app.modelo.VentaReciente
@@ -58,11 +57,10 @@ import com.butterfly.app.util.resumenDeVenta
 fun PantallaPrincipal(
     correo: String,
     autorizado: Boolean,
-    interpretando: Boolean,
-    resultado: ResultadoInterpretacion?,
+    estado: EstadoDeGuardado,
     onAutorizar: () -> Unit,
     onCerrarSesion: () -> Unit,
-    onInterpretar: (String) -> Unit,
+    onGuardar: (String) -> Unit,
     onProbarEjemplos: () -> Unit,
 ) {
     // El texto NO se borra al interpretar: si el registro sale incompleto, la dueña
@@ -111,17 +109,17 @@ fun PantallaPrincipal(
                 placeholder = { Text(stringResource(R.string.ejemplo_venta)) },
                 minLines = 4,
                 maxLines = 8,
-                enabled = !interpretando,
+                enabled = estado !is EstadoDeGuardado.Trabajando,
             )
 
             Button(
-                onClick = { onInterpretar(texto) },
-                enabled = !interpretando && texto.isNotBlank(),
+                onClick = { onGuardar(texto) },
+                enabled = estado !is EstadoDeGuardado.Trabajando && texto.isNotBlank(),
                 modifier = Modifier
                     .fillMaxWidth()
                     .height(56.dp),
             ) {
-                if (interpretando) {
+                if (estado is EstadoDeGuardado.Trabajando) {
                     CircularProgressIndicator(
                         modifier = Modifier.size(22.dp),
                         strokeWidth = 2.dp,
@@ -135,7 +133,7 @@ fun PantallaPrincipal(
                 }
             }
 
-            if (resultado != null) TarjetaDeResultado(resultado)
+            if (estado !is EstadoDeGuardado.Inactivo) TarjetaDeResultado(estado)
 
             if (BuildConfig.DEBUG) {
                 OutlinedButton(
@@ -160,57 +158,39 @@ fun PantallaPrincipal(
     }
 }
 
-/** Lo que la IA entendio, o por que no pudo. Es el punto 6 de la especificacion. */
+/** Lo que paso al guardar. Es el punto 6 de la especificacion. */
 @Composable
-private fun TarjetaDeResultado(resultado: ResultadoInterpretacion) {
+private fun TarjetaDeResultado(estado: EstadoDeGuardado) {
     val colores = MaterialTheme.colorScheme
-    val (fondo, contenido) = when (resultado) {
-        is ResultadoInterpretacion.Completa -> colores.primaryContainer to colores.onPrimaryContainer
-        else -> colores.errorContainer to colores.onErrorContainer
+    val correcto = estado is EstadoDeGuardado.Guardada || estado is EstadoDeGuardado.YaEstaba
+    val fondo = if (correcto) colores.primaryContainer else colores.errorContainer
+    val contenido = if (correcto) colores.onPrimaryContainer else colores.onErrorContainer
+
+    val texto = when (estado) {
+        is EstadoDeGuardado.Guardada -> "✅ Venta guardada: " + estado.resumen
+        is EstadoDeGuardado.YaEstaba ->
+            "✅ Esta venta ya estaba guardada: " + estado.resumen + ". No se duplicó."
+        is EstadoDeGuardado.Incompleta ->
+            "⚠️ No se registró: falta " + estado.faltan + ". Corrige el texto y vuelve a intentar."
+        EstadoDeGuardado.NoEsUnaVenta ->
+            "⚠️ Ese texto no parece una venta, así que no se registró nada."
+        is EstadoDeGuardado.SinConexion ->
+            "⏳ Sin conexión. La venta no se ha guardado todavía."
+        is EstadoDeGuardado.Error -> "⚠️ " + estado.mensaje
+        EstadoDeGuardado.Trabajando, EstadoDeGuardado.Inactivo -> ""
     }
+    if (texto.isBlank()) return
 
     Card(
         modifier = Modifier.fillMaxWidth(),
         colors = CardDefaults.cardColors(containerColor = fondo),
     ) {
-        Column(modifier = Modifier.padding(14.dp)) {
-            when (resultado) {
-                is ResultadoInterpretacion.Completa -> {
-                    Text(
-                        text = "✅ " + resumenDeVenta(resultado.venta),
-                        style = MaterialTheme.typography.bodyMedium,
-                        color = contenido,
-                    )
-                    Text(
-                        text = stringResource(R.string.todavia_no_se_guarda),
-                        style = MaterialTheme.typography.bodySmall,
-                        color = contenido,
-                        modifier = Modifier.padding(top = 6.dp),
-                    )
-                }
-
-                is ResultadoInterpretacion.Incompleta -> Text(
-                    text = "⚠️ " + stringResource(
-                        R.string.falta_dato,
-                        resultado.venta.datosQueFaltan.joinToString(" y "),
-                    ),
-                    style = MaterialTheme.typography.bodyMedium,
-                    color = contenido,
-                )
-
-                ResultadoInterpretacion.NoEsUnaVenta -> Text(
-                    text = "⚠️ " + stringResource(R.string.no_es_venta),
-                    style = MaterialTheme.typography.bodyMedium,
-                    color = contenido,
-                )
-
-                is ResultadoInterpretacion.Fallo -> Text(
-                    text = "⚠️ " + resultado.mensaje,
-                    style = MaterialTheme.typography.bodyMedium,
-                    color = contenido,
-                )
-            }
-        }
+        Text(
+            text = texto,
+            style = MaterialTheme.typography.bodyMedium,
+            color = contenido,
+            modifier = Modifier.padding(14.dp),
+        )
     }
 }
 
@@ -283,11 +263,10 @@ private fun VistaPreviaPantallaPrincipal() {
         PantallaPrincipal(
             correo = "dueña@gmail.com",
             autorizado = true,
-            interpretando = false,
-            resultado = null,
+            estado = EstadoDeGuardado.Inactivo,
             onAutorizar = {},
             onCerrarSesion = {},
-            onInterpretar = {},
+            onGuardar = {},
             onProbarEjemplos = {},
         )
     }

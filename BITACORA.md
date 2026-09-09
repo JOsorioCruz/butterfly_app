@@ -214,3 +214,39 @@ Validación B.
 
 ---
 
+## 2026-09-09 — #007 · Tarea 4: guardado en Google Sheets
+
+**Decisiones que conviene no perder:**
+
+1. **`insertDataOption=INSERT_ROWS`.** Es lo que garantiza el punto 5: inserta filas
+   nuevas al final sin tocar nada de lo existente, en una hoja que la dueña sigue
+   editando a mano.
+2. **Ante la duda, no se escribe.** Si la comprobación del identificador falla (por
+   ejemplo, se cae la red justo ahí), la app **no** escribe la fila y devuelve
+   «sin conexión» para reintentar. Un duplicado en las cuentas del negocio es peor que
+   un reintento.
+3. **Rescate de la hoja tras reinstalar.** Si el celular ya no tiene guardado el ID de
+   la hoja, la app la busca en Drive por su nombre antes de crear una nueva. Con el
+   permiso `drive.file` esa búsqueda solo devuelve archivos creados por la propia app,
+   así que no ve nada más del Drive. Sin este rescate, reinstalar habría creado una hoja
+   nueva y dejado la anterior huérfana.
+4. **El identificador se genera antes de enviar**, no después de que Sheets responda.
+   Es lo que hará funcionar la Tarea 8: sin conexión el ID ya existe y el reintento lo
+   reconoce.
+5. **Se unificó el estado de pantalla** de las Tareas 3 y 4 en `EstadoDeGuardado`. Para
+   la dueña «interpretar» y «guardar» son una sola acción: escribió y pulsó un botón.
+6. **El código HTTP se centralizó** en `util/Http.kt`, ahora que hay cuatro llamadas
+   distintas. Un fallo de red devuelve código 0, distinto de un error del servidor, para
+   que la Tarea 8 sepa cuándo encolar.
+
+**Tropiezo corregido durante el desarrollo:** al reorganizar `MainActivity` se insertó
+un bloque en mitad de una línea, partiendo una declaración de estado. Detectado
+revisando el archivo antes de compilar, y reparado.
+
+**Bloqueo actual:** la Validación C no puede empezar sin el ID del cliente Web (Tarea 2),
+porque escribir en la hoja necesita el permiso que da ese login.
+
+**Resultado:** ⏳ Compila e instala. A la espera del login.
+
+---
+
