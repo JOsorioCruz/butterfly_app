@@ -32,3 +32,25 @@ fun resumenDeVenta(venta: VentaInterpretada): String = buildString {
         }
     }
 }
+
+/** "Hoy, 2:14 p. m." · "Ayer, 6:20 p. m." · "9 sep, 2:14 p. m." */
+fun horaLegible(momento: Long): String {
+    val hora = java.text.SimpleDateFormat("h:mm a", Locale("es", "CO")).format(java.util.Date(momento))
+    val hoy = java.util.Calendar.getInstance()
+    val cuando = java.util.Calendar.getInstance().apply { timeInMillis = momento }
+
+    fun mismoDia(a: java.util.Calendar, b: java.util.Calendar) =
+        a.get(java.util.Calendar.YEAR) == b.get(java.util.Calendar.YEAR) &&
+            a.get(java.util.Calendar.DAY_OF_YEAR) == b.get(java.util.Calendar.DAY_OF_YEAR)
+
+    val ayer = java.util.Calendar.getInstance().apply {
+        add(java.util.Calendar.DAY_OF_YEAR, -1)
+    }
+
+    return when {
+        mismoDia(hoy, cuando) -> "Hoy, $hora"
+        mismoDia(ayer, cuando) -> "Ayer, $hora"
+        else -> java.text.SimpleDateFormat("d MMM, h:mm a", Locale("es", "CO"))
+            .format(java.util.Date(momento))
+    }
+}

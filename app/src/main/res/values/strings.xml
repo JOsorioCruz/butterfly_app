@@ -6,7 +6,6 @@
     <string name="errores">Errores</string>
     <string name="ahora">Ahora</string>
     <string name="ejemplo_venta">venta de blusa: maria, talla m, 50 mil, credito, abono 20 mil</string>
-    <string name="aviso_diseno">Vista de diseño (Tarea 1). Todavía no guarda nada en Google Sheets: el botón solo agrega la venta a esta lista para revisar cómo se ve.</string>
     <string name="cerrar_sesion">Salir</string>
     <string name="cuenta_autorizada">Conectada. La app puede escribir en tu hoja de cálculo.</string>
     <string name="cuenta_sin_permiso">Falta el permiso para escribir en la hoja.</string>
@@ -16,10 +15,10 @@
     <string name="login_falta_configuracion">Falta configurar el ID del cliente Web de Google en local.properties. Sin ese dato el inicio de sesión no puede funcionar. Ver tareas/tarea-2.md.</string>
     <string name="login_aviso_verificacion">Si Google muestra un aviso de que no verificó la app, toca «Avanzado» y luego «Ir a la app». Es un paso que solo aparece la primera vez.</string>
     <string name="probar_ejemplos">Probar los 15 ejemplos (Validación B)</string>
-    <string name="todavia_no_se_guarda">Todavía no se guarda en la hoja: eso llega en la Tarea 4.</string>
     <string name="falta_dato">No se pudo registrar: falta %1$s. Corrige el texto y vuelve a intentar.</string>
     <string name="no_es_venta">Ese texto no parece una venta, así que no se registró nada.</string>
     <string name="pruebas_titulo">Validación B — 15 ejemplos</string>
     <string name="pruebas_volver">Volver</string>
     <string name="pruebas_ejecutar">Ejecutar</string>
+    <string name="historial_vacio">Todavía no hay ventas registradas. Escribe una arriba y presiona «Guardar venta».</string>
 </resources>

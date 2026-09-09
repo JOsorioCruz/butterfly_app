@@ -250,3 +250,34 @@ porque escribir en la hoja necesita el permiso que da ese login.
 
 ---
 
+## 2026-09-09 — #008 · Tarea 5: confirmación en pantalla e historial real
+
+**Decisiones que conviene no perder:**
+
+1. **Archivo JSON en vez de Room.** Aquí hay una sola lista de unas pocas ventas al día,
+   sin consultas ni relaciones. Room habría traído un generador de código, más
+   dependencias y migraciones que mantener, a cambio de nada útil. La prioridad fijada
+   para el proyecto es que el código sea simple.
+2. **Escritura segura.** El historial se escribe a un archivo temporal y se renombra. Si
+   el celular se apaga a mitad de escritura, el historial anterior queda intacto en vez
+   de a medias.
+3. **Solo se anota como guardada cuando Sheets lo confirma.** Si el guardado falla del
+   todo, no se anota nada. Si falla por conexión, se anota como `PENDIENTE`, que es el
+   estado que reintentará la Tarea 8. Es la Regla 2 aplicada también al historial.
+4. **El historial guarda la venta completa, no solo el resumen.** La Tarea 8 debe poder
+   reintentar el envío **sin volver a preguntarle a la IA**: repreguntar gastaría cuota
+   gratuita y podría dar una lectura distinta de la que ya se le mostró a la dueña.
+
+**Efecto secundario aceptado a conciencia:** los intentos incompletos quedan registrados
+en el historial. Si la dueña escribe algo incompleto, lo corrige y lo guarda, quedarán
+**dos entradas** (la incompleta y la guardada). Se eligió esto frente a borrar la
+incompleta al corregir, porque adivinar qué corrección corresponde a qué intento fallido
+lleva a borrar lo que no se debía. Si al usarlo resulta molesto, se cambia.
+
+**Limpieza:** se borraron los datos de ejemplo (`DatosDeEjemplo.kt`, `VentaReciente.kt`)
+y el aviso de «vista de diseño». La pantalla ya guarda de verdad.
+
+**Resultado:** ⏳ Compila e instala. La Validación D no puede empezar sin el login.
+
+---
+

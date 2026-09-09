@@ -39,11 +39,10 @@ import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import com.butterfly.app.BuildConfig
 import com.butterfly.app.R
-import com.butterfly.app.modelo.EstadoVenta
-import com.butterfly.app.modelo.VENTAS_DE_EJEMPLO
-import com.butterfly.app.modelo.VentaReciente
+import com.butterfly.app.datos.EstadoRegistro
+import com.butterfly.app.datos.RegistroLocal
 import com.butterfly.app.ui.theme.TemaButterfly
-import com.butterfly.app.util.resumenDeVenta
+import com.butterfly.app.util.horaLegible
 
 /**
  * La unica pantalla de la app: escribir, guardar y ver lo ultimo guardado.
@@ -58,6 +57,7 @@ fun PantallaPrincipal(
     correo: String,
     autorizado: Boolean,
     estado: EstadoDeGuardado,
+    historial: List<RegistroLocal>,
     onAutorizar: () -> Unit,
     onCerrarSesion: () -> Unit,
     onGuardar: (String) -> Unit,
@@ -66,7 +66,6 @@ fun PantallaPrincipal(
     // El texto NO se borra al interpretar: si el registro sale incompleto, la dueña
     // corrige sobre lo que ya escribio en vez de volver a escribirlo (punto 6).
     var texto by remember { mutableStateOf("") }
-    val historial = remember { VENTAS_DE_EJEMPLO.toList() }
 
     Scaffold(
         topBar = {
@@ -151,7 +150,15 @@ fun PantallaPrincipal(
                 modifier = Modifier.padding(top = 8.dp),
             )
 
-            historial.forEach { FilaDeVenta(it) }
+            if (historial.isEmpty()) {
+                Text(
+                    text = stringResource(R.string.historial_vacio),
+                    style = MaterialTheme.typography.bodySmall,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                )
+            } else {
+                historial.forEach { FilaDeVenta(it) }
+            }
 
             Spacer(modifier = Modifier.height(16.dp))
         }
@@ -230,21 +237,21 @@ private fun EstadoDeLaCuenta(correo: String, autorizado: Boolean, onAutorizar: (
 }
 
 @Composable
-private fun FilaDeVenta(venta: VentaReciente) {
+private fun FilaDeVenta(registro: RegistroLocal) {
     Column(modifier = Modifier.fillMaxWidth()) {
         Row(verticalAlignment = Alignment.Top) {
-            Text(text = venta.estado.emoji, modifier = Modifier.padding(end = 10.dp))
+            Text(text = registro.estado.emoji, modifier = Modifier.padding(end = 10.dp))
             Column(modifier = Modifier.fillMaxWidth()) {
-                Text(text = venta.resumen, style = MaterialTheme.typography.bodyMedium)
+                Text(text = registro.resumen, style = MaterialTheme.typography.bodyMedium)
                 Text(
                     text = buildString {
-                        append(venta.hora)
+                        append(horaLegible(registro.fecha))
                         append(" · ")
-                        append(venta.estado.etiqueta)
-                        venta.faltante?.let { append(" · "); append(it) }
+                        append(registro.estado.etiqueta)
+                        registro.faltante?.let { append(" · "); append(it) }
                     },
                     style = MaterialTheme.typography.bodySmall,
-                    color = if (venta.estado == EstadoVenta.INCOMPLETA) {
+                    color = if (registro.estado == EstadoRegistro.INCOMPLETA) {
                         MaterialTheme.colorScheme.error
                     } else {
                         MaterialTheme.colorScheme.onSurfaceVariant
@@ -264,6 +271,7 @@ private fun VistaPreviaPantallaPrincipal() {
             correo = "dueña@gmail.com",
             autorizado = true,
             estado = EstadoDeGuardado.Inactivo,
+            historial = emptyList(),
             onAutorizar = {},
             onCerrarSesion = {},
             onGuardar = {},

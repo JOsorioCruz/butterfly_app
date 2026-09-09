@@ -17,7 +17,10 @@ import com.butterfly.app.auth.AlmacenDeSesion
 import com.butterfly.app.auth.AutenticacionGoogle
 import com.butterfly.app.auth.ResultadoAutorizacion
 import com.butterfly.app.auth.ResultadoLogin
+import com.butterfly.app.datos.EstadoRegistro
+import com.butterfly.app.datos.HistorialLocal
 import com.butterfly.app.datos.HojaDeVentas
+import com.butterfly.app.datos.RegistroLocal
 import com.butterfly.app.datos.ResultadoGuardado
 import com.butterfly.app.datos.nuevoIdDeRegistro
 import com.butterfly.app.ia.InterpretePorIA
@@ -42,6 +45,7 @@ class MainActivity : ComponentActivity() {
         val almacen = AlmacenDeSesion(this)
         val interprete = InterpretePorIA()
         val hoja = HojaDeVentas(this)
+        val historialLocal = HistorialLocal(this)
 
         setContent {
             TemaButterfly {
@@ -58,6 +62,10 @@ class MainActivity : ComponentActivity() {
                 var estadoDeGuardado by remember {
                     mutableStateOf<EstadoDeGuardado>(EstadoDeGuardado.Inactivo)
                 }
+                // Tarea 5: el historial vive en el celular, asi que sigue ahi al
+                // cerrar y reabrir la app.
+                var historial by remember { mutableStateOf(emptyList<RegistroLocal>()) }
+                LaunchedEffect(Unit) { historial = historialLocal.leer() }
 
                 // Validacion B: solo en la version de depuracion.
                 var enPantallaDePruebas by remember { mutableStateOf(false) }
@@ -154,11 +162,14 @@ class MainActivity : ComponentActivity() {
                         correo = sesionActual.correo,
                         autorizado = tokenDeAcceso != null,
                         estado = estadoDeGuardado,
+                        historial = historial,
                         onGuardar = { texto ->
                             estadoDeGuardado = EstadoDeGuardado.Trabajando
                             alcance.launch {
-                                estadoDeGuardado =
-                                    interpretarYGuardar(texto, interprete, hoja, tokenDeAcceso)
+                                estadoDeGuardado = interpretarYGuardar(
+                                    texto, interprete, hoja, historialLocal, tokenDeAcceso,
+                                )
+                                historial = historialLocal.leer()
                             }
                         },
                         onProbarEjemplos = { enPantallaDePruebas = true },
@@ -188,31 +199,70 @@ class MainActivity : ComponentActivity() {
         texto: String,
         interprete: InterpretePorIA,
         hoja: HojaDeVentas,
+        historial: HistorialLocal,
         token: String?,
-    ): EstadoDeGuardado = when (val lectura = interprete.interpretar(texto)) {
-        is ResultadoInterpretacion.Incompleta ->
-            EstadoDeGuardado.Incompleta(lectura.venta.datosQueFaltan.joinToString(" y "))
+    ): EstadoDeGuardado {
+        // El identificador se genera ANTES de intentar mandar nada, para que un
+        // reintento pueda reconocer la venta y no duplicarla (Regla 2).
+        val id = nuevoIdDeRegistro()
 
-        ResultadoInterpretacion.NoEsUnaVenta -> EstadoDeGuardado.NoEsUnaVenta
-
-        is ResultadoInterpretacion.Fallo -> EstadoDeGuardado.Error(lectura.mensaje)
-
-        is ResultadoInterpretacion.Completa -> {
-            val resumen = resumenDeVenta(lectura.venta)
-            if (token == null) {
-                EstadoDeGuardado.Error(
-                    "Falta el permiso para escribir en la hoja. Vuelve a entrar con Google.",
+        return when (val lectura = interprete.interpretar(texto)) {
+            is ResultadoInterpretacion.Incompleta -> {
+                val falta = lectura.venta.datosQueFaltan.joinToString(" y ")
+                // Se deja constancia del intento: no se creo ninguna fila en la hoja,
+                // pero la dueña puede ver que ese mensaje no quedo registrado.
+                historial.agregar(
+                    RegistroLocal(
+                        id = id,
+                        fecha = System.currentTimeMillis(),
+                        resumen = "\"" + texto.trim() + "\"",
+                        estado = EstadoRegistro.INCOMPLETA,
+                        mensajeOriginal = texto,
+                        faltante = "Falta " + falta,
+                    ),
                 )
-            } else {
-                // El identificador se genera ANTES de intentar mandar nada, para que un
-                // reintento pueda reconocer la venta y no duplicarla (Regla 2).
-                val id = nuevoIdDeRegistro()
-                when (val guardado = hoja.guardar(lectura.venta, id, token)) {
-                    ResultadoGuardado.Guardada -> EstadoDeGuardado.Guardada(resumen)
-                    ResultadoGuardado.YaEstaba -> EstadoDeGuardado.YaEstaba(resumen)
-                    is ResultadoGuardado.SinConexion ->
-                        EstadoDeGuardado.SinConexion(guardado.mensaje)
-                    is ResultadoGuardado.Fallo -> EstadoDeGuardado.Error(guardado.mensaje)
+                EstadoDeGuardado.Incompleta(falta)
+            }
+
+            ResultadoInterpretacion.NoEsUnaVenta -> EstadoDeGuardado.NoEsUnaVenta
+
+            is ResultadoInterpretacion.Fallo -> EstadoDeGuardado.Error(lectura.mensaje)
+
+            is ResultadoInterpretacion.Completa -> {
+                val resumen = resumenDeVenta(lectura.venta)
+                if (token == null) {
+                    EstadoDeGuardado.Error(
+                        "Falta el permiso para escribir en la hoja. Vuelve a entrar con Google.",
+                    )
+                } else {
+                    val guardado = hoja.guardar(lectura.venta, id, token)
+                    val estado = when (guardado) {
+                        ResultadoGuardado.Guardada, ResultadoGuardado.YaEstaba ->
+                            EstadoRegistro.GUARDADA
+                        is ResultadoGuardado.SinConexion -> EstadoRegistro.PENDIENTE
+                        is ResultadoGuardado.Fallo -> null
+                    }
+                    // Una venta solo se anota como guardada cuando Google Sheets lo
+                    // confirmo. Si fallo, no se anota nada (Regla 2 y punto 9).
+                    if (estado != null) {
+                        historial.agregar(
+                            RegistroLocal(
+                                id = id,
+                                fecha = System.currentTimeMillis(),
+                                resumen = resumen,
+                                estado = estado,
+                                mensajeOriginal = texto,
+                                venta = lectura.venta,
+                            ),
+                        )
+                    }
+                    when (guardado) {
+                        ResultadoGuardado.Guardada -> EstadoDeGuardado.Guardada(resumen)
+                        ResultadoGuardado.YaEstaba -> EstadoDeGuardado.YaEstaba(resumen)
+                        is ResultadoGuardado.SinConexion ->
+                            EstadoDeGuardado.SinConexion(guardado.mensaje)
+                        is ResultadoGuardado.Fallo -> EstadoDeGuardado.Error(guardado.mensaje)
+                    }
                 }
             }
         }
