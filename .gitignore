@@ -1,0 +1,23 @@
+### Android / Gradle ###
+*.iml
+.gradle/
+build/
+local.properties
+.cxx/
+captures/
+output.json
+
+### Claves y firmas - NUNCA subir ###
+*.jks
+*.keystore
+keystore.properties
+
+### IntelliJ / Android Studio ###
+.idea/
+out/
+
+### Kotlin ###
+.kotlin/
+
+### Mac OS ###
+.DS_Store

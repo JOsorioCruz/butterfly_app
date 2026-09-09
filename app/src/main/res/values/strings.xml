@@ -1,0 +1,10 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="app_name">Butterfly</string>
+    <string name="guardar_venta">Guardar venta</string>
+    <string name="ventas_recientes">Ventas recientes</string>
+    <string name="errores">Errores</string>
+    <string name="ahora">Ahora</string>
+    <string name="ejemplo_venta">venta de blusa: maria, talla m, 50 mil, credito, abono 20 mil</string>
+    <string name="aviso_diseno">Vista de diseño (Tarea 1). Todavía no guarda nada en Google Sheets: el botón solo agrega la venta a esta lista para revisar cómo se ve.</string>
+</resources>
