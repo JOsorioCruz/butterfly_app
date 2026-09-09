@@ -343,3 +343,45 @@ batería del fabricante.
 
 ---
 
+## 2026-09-09 — #011 · Tarea 8: modo offline y sincronización
+
+**El problema de fondo:** Gemini también necesita internet. Sin conexión no se puede
+interpretar el texto, así que **se guarda el mensaje tal como se escribió** y la
+interpretación se hace al sincronizar. Lo que importa es que el mensaje no se pierda.
+
+**Decisiones que conviene no perder:**
+
+1. **Se comprueba la conexión ANTES de llamar a la IA.** Antes de esta tarea, escribir
+   sin internet acababa en el historial de errores como «la IA no respondió», que era
+   un diagnóstico equivocado y dejaba la venta sin registrar. Ahora va a la cola.
+2. **WorkManager, no un escucha de red.** Es lo único que cumple las tres condiciones a
+   la vez: espera a que haya internet, sobrevive a que se cierre la app y sobrevive a
+   que se reinicie el celular. Un `BroadcastReceiver` de conectividad no sobrevive a lo
+   último, y desde Android 7 ese aviso implícito ya no llega estando la app cerrada.
+   Versión 2.11.2, comprobado su `minCompileSdk` (35) según la regla de la #004.
+3. **`ExistingWorkPolicy.KEEP`.** Si ya hay un trabajo esperando conexión, se deja el
+   que está: haría exactamente lo mismo y amontonarlos solo gasta batería.
+4. **`Result.retry()` en vez de reintentar en bucle.** WorkManager espera cada vez un
+   poco más, que es lo correcto cuando el problema es que no hay red.
+5. **Las pendientes se suben de la más antigua a la más reciente**, para que la hoja
+   quede en orden cronológico y no al revés.
+6. **No se vuelve a preguntar a la IA si ya se había interpretado.** Una venta que se
+   interpretó pero no llegó a la hoja conserva sus datos: repreguntar gastaría cuota
+   gratuita y podría dar una lectura distinta de la que ya se le mostró a la dueña.
+7. **El resumen se actualiza al sincronizar.** Una venta escrita sin conexión aparece
+   en el historial con el texto crudo; cuando se sube, pasa a mostrar el resumen real.
+
+**Sobre la Regla 2:** cada pendiente conserva el identificador que se le generó al
+escribirla, y `HojaDeVentas.guardar` lo comprueba en la hoja antes de escribir. Esa es
+la garantía de que la Validación E («se sincroniza sola sin duplicarse») se cumple
+incluso si el envío se corta a la mitad.
+
+**Corrección de mensaje:** el aviso de sin conexión decía «la venta no se ha guardado
+todavía», lo que sonaba a que se había perdido. Ahora dice que quedó guardada en el
+celular y que se subirá sola.
+
+**Resultado:** ⏳ Compila e instala. La Validación E necesita el login y, obligatoriamente,
+el celular real: el emulador no reproduce la pérdida de señal de la calle.
+
+---
+

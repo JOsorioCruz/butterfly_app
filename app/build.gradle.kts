@@ -85,6 +85,7 @@ dependencies {
     implementation(libs.androidx.credentials.play.services)
     implementation(libs.google.id)
     implementation(libs.play.services.auth)
+    implementation(libs.androidx.work)
 
     debugImplementation(libs.androidx.ui.tooling)
 }

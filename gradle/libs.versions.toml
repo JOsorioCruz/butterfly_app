@@ -13,6 +13,7 @@ activityCompose = "1.12.4"  # 1.13.0 exige compileSdk 37
 credentials = "1.6.0"     # minCompileSdk 35 (comprobado)
 playServicesAuth = "22.0.0"  # minCompileSdk 1 (comprobado)
 googleId = "1.2.0"        # sin minCompileSdk (comprobado)
+work = "2.11.2"           # minCompileSdk 35 (comprobado)
 composeBom = "2026.06.00" # fija Compose 1.11.3; el 2026.08 trae 1.12 y exige compileSdk 37
 
 [libraries]
@@ -32,6 +33,9 @@ androidx-credentials = { group = "androidx.credentials", name = "credentials", v
 androidx-credentials-play-services = { group = "androidx.credentials", name = "credentials-play-services-auth", version.ref = "credentials" }
 google-id = { group = "com.google.android.libraries.identity.googleid", name = "googleid", version.ref = "googleId" }
 play-services-auth = { group = "com.google.android.gms", name = "play-services-auth", version.ref = "playServicesAuth" }
+
+# Sincronizacion en segundo plano cuando vuelve la conexion (Tarea 8).
+androidx-work = { group = "androidx.work", name = "work-runtime-ktx", version.ref = "work" }
 
 [plugins]
 android-application = { id = "com.android.application", version.ref = "agp" }

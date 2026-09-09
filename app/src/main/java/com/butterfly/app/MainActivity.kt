@@ -33,6 +33,9 @@ import com.butterfly.app.datos.nuevoIdDeRegistro
 import com.butterfly.app.ia.InterpretePorIA
 import com.butterfly.app.recordatorios.ProgramadorDeRecordatorios
 import com.butterfly.app.recordatorios.crearCanalDeAvisos
+import com.butterfly.app.sincronizacion.pedirSincronizacion
+import com.butterfly.app.sincronizacion.sincronizarPendientes
+import com.butterfly.app.util.hayInternet
 import com.butterfly.app.ia.ResultadoInterpretacion
 import com.butterfly.app.ia.ejecutarBancoDePruebas
 import com.butterfly.app.ui.EstadoDeGuardado
@@ -92,6 +95,14 @@ class MainActivity : ComponentActivity() {
                 LaunchedEffect(Unit) {
                     historial = historialLocal.leer()
                     incidentes = errores.leer()
+
+                    // Al abrir la app se intenta vaciar la cola. Si no hay internet,
+                    // WorkManager se encarga cuando vuelva.
+                    if (historialLocal.pendientes().isNotEmpty()) {
+                        sincronizarPendientes(applicationContext)
+                        historial = historialLocal.leer()
+                        pedirSincronizacion(applicationContext)
+                    }
                 }
 
                 // Validacion B: solo en la version de depuracion.
@@ -293,6 +304,23 @@ class MainActivity : ComponentActivity() {
         val id = idExistente ?: nuevoIdDeRegistro()
         val ahora = System.currentTimeMillis()
 
+        // Sin internet no se puede ni preguntarle a la IA, asi que se guarda el texto
+        // tal como se escribio y se interpreta al sincronizar. Lo importante es que el
+        // mensaje no se pierda (Tarea 8).
+        if (!hayInternet(this)) {
+            historial.agregar(
+                RegistroLocal(
+                    id = id,
+                    fecha = ahora,
+                    resumen = "\"" + texto.trim() + "\"",
+                    estado = EstadoRegistro.PENDIENTE,
+                    mensajeOriginal = texto,
+                ),
+            )
+            pedirSincronizacion(applicationContext)
+            return EstadoDeGuardado.SinConexion("Sin conexión")
+        }
+
         suspend fun anotarIncidente(tipo: TipoDeIncidente, queFallo: String) {
             errores.agregar(
                 Incidente(
@@ -366,6 +394,11 @@ class MainActivity : ComponentActivity() {
                             venta = lectura.venta,
                         ),
                     )
+                    // Se guarda la venta ya interpretada: al reintentar no hay que
+                    // volver a preguntarle a la IA.
+                    if (estado == EstadoRegistro.PENDIENTE) {
+                        pedirSincronizacion(applicationContext)
+                    }
                 }
 
                 when (guardado) {

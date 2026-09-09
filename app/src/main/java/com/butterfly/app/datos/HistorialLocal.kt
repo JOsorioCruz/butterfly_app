@@ -55,6 +55,16 @@ class HistorialLocal(context: Context) {
             }
         }
 
+    /** Sustituye un registro entero por otro con el mismo identificador. */
+    suspend fun reemplazar(registro: RegistroLocal): List<RegistroLocal> =
+        withContext(Dispatchers.IO) {
+            candado.withLock {
+                val lista = leerDelDisco().map { if (it.id == registro.id) registro else it }
+                escribirEnDisco(lista)
+                lista
+            }
+        }
+
     /** Las ventas que todavia no llegaron a la hoja. La Tarea 8 las reintenta. */
     suspend fun pendientes(): List<RegistroLocal> =
         leer().filter { it.estado == EstadoRegistro.PENDIENTE }

@@ -191,7 +191,8 @@ private fun TarjetaDeResultado(estado: EstadoDeGuardado) {
         EstadoDeGuardado.NoEsUnaVenta ->
             "⚠️ Ese texto no parece una venta, así que no se registró nada."
         is EstadoDeGuardado.SinConexion ->
-            "⏳ Sin conexión. La venta no se ha guardado todavía."
+            "⏳ Sin conexión. La venta quedó guardada en el celular y se subirá sola " +
+                "en cuanto vuelva el internet."
         is EstadoDeGuardado.Error -> "⚠️ " + estado.mensaje
         EstadoDeGuardado.Trabajando, EstadoDeGuardado.Inactivo -> ""
     }
