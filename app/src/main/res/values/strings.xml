@@ -15,4 +15,11 @@
     <string name="login_explicacion">Inicia sesión con tu cuenta de Google. La app solo podrá ver y editar la hoja de cálculo que ella misma cree — nada más de tu Drive.</string>
     <string name="login_falta_configuracion">Falta configurar el ID del cliente Web de Google en local.properties. Sin ese dato el inicio de sesión no puede funcionar. Ver tareas/tarea-2.md.</string>
     <string name="login_aviso_verificacion">Si Google muestra un aviso de que no verificó la app, toca «Avanzado» y luego «Ir a la app». Es un paso que solo aparece la primera vez.</string>
+    <string name="probar_ejemplos">Probar los 15 ejemplos (Validación B)</string>
+    <string name="todavia_no_se_guarda">Todavía no se guarda en la hoja: eso llega en la Tarea 4.</string>
+    <string name="falta_dato">No se pudo registrar: falta %1$s. Corrige el texto y vuelve a intentar.</string>
+    <string name="no_es_venta">Ese texto no parece una venta, así que no se registró nada.</string>
+    <string name="pruebas_titulo">Validación B — 15 ejemplos</string>
+    <string name="pruebas_volver">Volver</string>
+    <string name="pruebas_ejecutar">Ejecutar</string>
 </resources>

@@ -17,7 +17,12 @@ import com.butterfly.app.auth.AlmacenDeSesion
 import com.butterfly.app.auth.AutenticacionGoogle
 import com.butterfly.app.auth.ResultadoAutorizacion
 import com.butterfly.app.auth.ResultadoLogin
+import com.butterfly.app.ia.InterpretePorIA
+import com.butterfly.app.ia.ResultadoInterpretacion
+import com.butterfly.app.ia.ejecutarBancoDePruebas
 import com.butterfly.app.ui.PantallaLogin
+import com.butterfly.app.ui.PantallaPruebas
+import com.butterfly.app.ui.ResultadoDeCaso
 import com.butterfly.app.ui.PantallaPrincipal
 import com.butterfly.app.ui.theme.TemaButterfly
 import kotlinx.coroutines.launch
@@ -30,6 +35,7 @@ class MainActivity : ComponentActivity() {
 
         val autenticacion = AutenticacionGoogle(this)
         val almacen = AlmacenDeSesion(this)
+        val interprete = InterpretePorIA()
 
         setContent {
             TemaButterfly {
@@ -41,6 +47,15 @@ class MainActivity : ComponentActivity() {
                 var tokenDeAcceso by remember { mutableStateOf<String?>(null) }
                 var cargando by remember { mutableStateOf(false) }
                 var mensajeDeError by remember { mutableStateOf<String?>(null) }
+
+                // Tarea 3: interpretacion del texto con la IA.
+                var interpretando by remember { mutableStateOf(false) }
+                var resultado by remember { mutableStateOf<ResultadoInterpretacion?>(null) }
+
+                // Validacion B: solo en la version de depuracion.
+                var enPantallaDePruebas by remember { mutableStateOf(false) }
+                var corriendoPruebas by remember { mutableStateOf(false) }
+                var resultadosDePruebas by remember { mutableStateOf(emptyList<ResultadoDeCaso>()) }
 
                 // Pantalla de permisos de Google, cuando hace falta mostrarla.
                 val pedirPermiso = rememberLauncherForActivityResult(
@@ -113,10 +128,35 @@ class MainActivity : ComponentActivity() {
                             }
                         },
                     )
+                } else if (enPantallaDePruebas) {
+                    PantallaPruebas(
+                        corriendo = corriendoPruebas,
+                        resultados = resultadosDePruebas,
+                        onEjecutar = {
+                            corriendoPruebas = true
+                            resultadosDePruebas = emptyList()
+                            alcance.launch {
+                                resultadosDePruebas = ejecutarBancoDePruebas(interprete)
+                                corriendoPruebas = false
+                            }
+                        },
+                        onVolver = { enPantallaDePruebas = false },
+                    )
                 } else {
                     PantallaPrincipal(
                         correo = sesionActual.correo,
                         autorizado = tokenDeAcceso != null,
+                        interpretando = interpretando,
+                        resultado = resultado,
+                        onInterpretar = { texto ->
+                            interpretando = true
+                            resultado = null
+                            alcance.launch {
+                                resultado = interprete.interpretar(texto)
+                                interpretando = false
+                            }
+                        },
+                        onProbarEjemplos = { enPantallaDePruebas = true },
                         onAutorizar = { pedirAutorizacion() },
                         onCerrarSesion = {
                             alcance.launch {

@@ -21,6 +21,10 @@ val geminiApiKey: String = localProperties.getProperty("GEMINI_API_KEY") ?: ""
 // codigo ni se sube al repositorio. Si falta, la app avisa en pantalla (Tarea 2).
 val googleWebClientId: String = localProperties.getProperty("GOOGLE_WEB_CLIENT_ID") ?: ""
 
+// Modelo de Gemini. Configurable porque los nombres de modelo cambian con el tiempo:
+// si el que trae por defecto deja de existir, se cambia aqui sin tocar el codigo.
+val geminiModelo: String = localProperties.getProperty("GEMINI_MODELO") ?: "gemini-2.5-flash"
+
 android {
     namespace = "com.butterfly.app"
     compileSdk = 36
@@ -34,6 +38,7 @@ android {
 
         buildConfigField("String", "GEMINI_API_KEY", "\"$geminiApiKey\"")
         buildConfigField("String", "GOOGLE_WEB_CLIENT_ID", "\"$googleWebClientId\"")
+        buildConfigField("String", "GEMINI_MODELO", "\"$geminiModelo\"")
     }
 
     buildTypes {

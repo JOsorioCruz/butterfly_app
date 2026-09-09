@@ -176,3 +176,41 @@ pase el **ID del cliente Web**. Hasta entonces la Validación A no puede empezar
 
 ---
 
+## 2026-09-09 — #006 · Tarea 1 aprobada; Tarea 3 escrita
+
+**Tarea 1:** el dueño del proyecto dio el visto bueno al diseño el 2026-09-09.
+Queda aprobada en su parte de diseño; falta la mirada en el celular real.
+
+**Tarea 3 — decisiones que conviene no perder:**
+
+1. **Las cuentas las hace Kotlin, no la IA.** El saldo se calcula en
+   `VentaInterpretada.crear`, no lo devuelve Gemini. Un modelo de lenguaje no garantiza
+   dar el mismo resultado dos veces ante la misma resta, y estas son las cuentas del
+   negocio. Las instrucciones que recibe Gemini dicen literalmente *«NO calcules saldos
+   ni restas»*. La temperatura va en 0 por lo mismo.
+2. **Sin librerías HTTP nuevas.** Se usa `HttpURLConnection` y el `org.json` que Android
+   ya trae. Con dos llamadas REST en toda la app, añadir OkHttp sería peso y
+   mantenimiento sin ganancia.
+3. **El nombre del modelo de Gemini es configurable** (`GEMINI_MODELO` en
+   `local.properties`). Los nombres de modelo cambian con el tiempo; si el de por
+   defecto desaparece, se cambia sin tocar código. El error 404 de la API lo dice
+   explícitamente en pantalla.
+4. **Los 15 casos de la Validación B son datos, no un documento.** Están en
+   `ia/BancoDePruebas.kt` y hay una pantalla que los ejecuta contra la IA real y compara
+   caso por caso. Solo existe en la versión de depuración.
+
+**Dos fallos corregidos que habrían roto todo:**
+
+- El manifiesto **no declaraba permiso de internet**. Ninguna llamada de red habría
+  funcionado, ni a Gemini ni a Sheets. Añadido, junto con `ACCESS_NETWORK_STATE` que
+  necesitará la Tarea 8.
+- El texto escrito **ya no se borra** al interpretar, para poder corregir un registro
+  incompleto sin volver a escribirlo (punto 6).
+
+**Bloqueo actual:** falta la clave de Gemini (Google AI Studio) para poder ejecutar la
+Validación B.
+
+**Resultado:** ⏳ Compila e instala. A la espera de la clave.
+
+---
+

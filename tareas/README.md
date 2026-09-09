@@ -14,9 +14,9 @@ antes de pasar a la siguiente**. No se entrega todo el desarrollo de una vez.
 | # | Tarea | Validación | Estado |
 |---|---|---|---|
 | [0](tarea-0.md) | Convertir el proyecto a Android + Gradle | — | ✅ Compila e instala — falta tu visto bueno |
-| [1](tarea-1.md) | Pantalla principal (solo interfaz) | — | ✅ Construida — falta tu visto bueno del diseño |
+| [1](tarea-1.md) | Pantalla principal (solo interfaz) | — | ✅ **Diseño aprobado** el 2026-09-09 |
 | [2](tarea-2.md) | Inicio de sesión con Google | **A** | 🔨 Código listo — falta el ID del cliente Web |
-| [3](tarea-3.md) | Gemini interpreta el texto + lógica de crédito | **B** | ⬜ Pendiente |
+| [3](tarea-3.md) | Gemini interpreta el texto + lógica de crédito | **B** | 🔨 Código listo — falta la clave de Gemini |
 | [4](tarea-4.md) | Guardado en Google Sheets + ID único | **C** | ⬜ Pendiente |
 | [5](tarea-5.md) | Confirmación en pantalla e historial | **D** | ⬜ Pendiente |
 | [6](tarea-6.md) | Historial de errores | — | ⬜ Pendiente |
