@@ -6,11 +6,18 @@ local.properties
 .cxx/
 captures/
 output.json
+.externalNativeBuild/
 
-### Claves y firmas - NUNCA subir ###
+### Claves, firmas y secretos - NUNCA subir ###
+# local.properties (arriba) lleva la clave de Gemini y el ID del cliente OAuth.
 *.jks
 *.keystore
 keystore.properties
+google-services.json
+
+### APK generados - se construyen con ./gradlew, no se versionan ###
+*.apk
+*.aab
 
 ### IntelliJ / Android Studio ###
 .idea/
