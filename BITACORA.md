@@ -308,3 +308,38 @@ Sheets para validarla.
 
 ---
 
+## 2026-09-09 — #010 · Tarea 7: recordatorios de pago
+
+**El problema de diseño que decidió el enfoque:** ¿de dónde saca la app que una deuda ya
+se pagó? La dueña **edita la hoja a mano** — ese es todo el punto del sistema. Si marca
+un saldo en $0 desde su celular, la app no se entera por sí sola. Un recordatorio basado
+en los datos del teléfono seguiría avisando de una deuda ya cobrada.
+
+**Decisión:** los recordatorios leen **la hoja**, no el archivo local. La hoja es la
+fuente de verdad. Cada vez que la app se abre con permiso, cuadra los avisos programados
+con lo que la hoja dice hoy: lo que ya no debe nada, se cancela.
+
+**Otras decisiones que conviene no perder:**
+
+1. **Alarmas inexactas, a propósito.** Android 12+ exige un permiso especial para las
+   alarmas al minuto exacto, y aquí no aporta nada: para «hoy toca cobrarle a María» da
+   igual que el aviso llegue a las 8:00 o a las 8:20. Pedir ese permiso habría añadido
+   un paso más de configuración a cambio de nada.
+2. **Un solo aviso agrupado**, nunca uno por clienta. Varios avisos el mismo día
+   convertirían la app en algo molesto que se termina silenciando.
+3. **Respaldo cuando no hay red.** Si al amanecer no se puede leer la hoja, se avisa con
+   la última copia guardada de las deudas. Puede estar algo desactualizada, pero un aviso
+   de más es mejor que olvidar un cobro.
+4. **Autorización silenciosa.** El barrido corre sin pantalla abierta, así que no puede
+   pedirle nada a la dueña. Se usa el cliente de autorización por `Context`: si el
+   permiso sigue concedido devuelve el token sin mostrar nada; si haría falta
+   intervención, se recurre al respaldo.
+5. **Reprogramación tras reiniciar.** Android borra todas las alarmas al reiniciar el
+   celular. Sin `BOOT_COMPLETED`, los recordatorios habrían desaparecido en silencio.
+
+**Resultado:** ⏳ Compila e instala. La Validación G necesita el login (para leer saldos
+de la hoja) y, obligatoriamente, el celular real: el emulador no reproduce el ahorro de
+batería del fabricante.
+
+---
+

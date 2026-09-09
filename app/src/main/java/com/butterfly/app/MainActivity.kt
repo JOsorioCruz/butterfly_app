@@ -1,5 +1,7 @@
 package com.butterfly.app
 
+import android.Manifest
+import android.os.Build
 import android.os.Bundle
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.rememberLauncherForActivityResult
@@ -25,8 +27,12 @@ import com.butterfly.app.datos.Incidente
 import com.butterfly.app.datos.RegistroLocal
 import com.butterfly.app.datos.ResultadoGuardado
 import com.butterfly.app.datos.TipoDeIncidente
+import com.butterfly.app.datos.UltimasDeudas
+import com.butterfly.app.datos.VentaPendienteDePago
 import com.butterfly.app.datos.nuevoIdDeRegistro
 import com.butterfly.app.ia.InterpretePorIA
+import com.butterfly.app.recordatorios.ProgramadorDeRecordatorios
+import com.butterfly.app.recordatorios.crearCanalDeAvisos
 import com.butterfly.app.ia.ResultadoInterpretacion
 import com.butterfly.app.ia.ejecutarBancoDePruebas
 import com.butterfly.app.ui.EstadoDeGuardado
@@ -54,6 +60,13 @@ class MainActivity : ComponentActivity() {
         val hoja = HojaDeVentas(this)
         val historialLocal = HistorialLocal(this)
         val errores = HistorialDeErrores(this)
+        val ultimasDeudas = UltimasDeudas(this)
+
+        // Tarea 7: los avisos de cobro necesitan un canal, y desde Android 13 tambien
+        // el permiso explicito de la dueña.
+        crearCanalDeAvisos(this)
+        pedirPermisoDeAvisos()
+        ProgramadorDeRecordatorios.programarBarridoDiario(this)
 
         setContent {
             TemaButterfly {
@@ -133,6 +146,15 @@ class MainActivity : ComponentActivity() {
                 // Si el permiso sigue concedido, la usuaria no ve nada.
                 LaunchedEffect(sesionActual) {
                     if (sesionActual != null && tokenDeAcceso == null) pedirAutorizacion()
+                }
+
+                // Cada vez que la app tiene permiso, se vuelven a cuadrar los avisos con
+                // lo que dice la hoja. Asi, si la dueña salda una deuda editando a mano,
+                // el recordatorio se cancela solo (punto 7).
+                LaunchedEffect(tokenDeAcceso) {
+                    val token = tokenDeAcceso ?: return@LaunchedEffect
+                    val deudas = hoja.ventasConSaldoPendiente(token) ?: return@LaunchedEffect
+                    sincronizarRecordatorios(deudas, ultimasDeudas)
                 }
 
                 when {
@@ -357,6 +379,36 @@ class MainActivity : ComponentActivity() {
                     }
                 }
             }
+        }
+    }
+
+    /**
+     * Cuadra los avisos programados con las deudas que hoy tiene la hoja.
+     *
+     * Cancela los de las ventas que ya no deben nada: es lo que hace que un recordatorio
+     * desaparezca solo cuando la dueña salda la deuda editando la hoja a mano.
+     */
+    private suspend fun sincronizarRecordatorios(
+        deudas: List<VentaPendienteDePago>,
+        copia: UltimasDeudas,
+    ) {
+        val siguenDebiendo = deudas.map { it.id }.toSet()
+
+        // Lo que estaba en la copia anterior y ya no aparece = deuda saldada.
+        copia.leer()
+            .filter { it.id !in siguenDebiendo }
+            .forEach { ProgramadorDeRecordatorios.cancelarParaVenta(this, it.id) }
+
+        deudas.forEach { ProgramadorDeRecordatorios.programarParaVenta(this, it) }
+        copia.guardar(deudas)
+    }
+
+    /** Desde Android 13 hay que pedir permiso para poder notificar. */
+    private fun pedirPermisoDeAvisos() {
+        if (Build.VERSION.SDK_INT < Build.VERSION_CODES.TIRAMISU) return
+        val permiso = Manifest.permission.POST_NOTIFICATIONS
+        if (checkSelfPermission(permiso) != android.content.pm.PackageManager.PERMISSION_GRANTED) {
+            requestPermissions(arrayOf(permiso), 1)
         }
     }
 }

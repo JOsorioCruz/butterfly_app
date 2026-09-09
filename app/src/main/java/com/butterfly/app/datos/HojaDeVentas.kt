@@ -106,6 +106,44 @@ class HojaDeVentas(context: Context) {
         }
     }
 
+    /**
+     * Lee de la hoja las ventas a credito que todavia deben algo.
+     *
+     * Se lee de la HOJA y no del archivo local a proposito: la dueña edita la hoja a
+     * mano desde su celular, asi que un saldo saldado solo existe alli. Si los
+     * recordatorios se basaran en los datos del telefono, seguirian avisando de deudas
+     * ya cobradas.
+     */
+    suspend fun ventasConSaldoPendiente(token: String): List<VentaPendienteDePago>? =
+        withContext(Dispatchers.IO) {
+            val hoja = idDeLaHoja ?: return@withContext emptyList()
+            val respuesta = peticionHttp(
+                url = "https://sheets.googleapis.com/v4/spreadsheets/$hoja/values/A2:N",
+                cabeceras = mapOf("Authorization" to "Bearer $token"),
+            )
+            if (!respuesta.exitosa) return@withContext null
+
+            val filas = JSONObject(respuesta.cuerpo).optJSONArray("values")
+                ?: return@withContext emptyList()
+
+            (0 until filas.length()).mapNotNull { i ->
+                val fila = filas.optJSONArray(i) ?: return@mapNotNull null
+                fun celda(indice: Int) =
+                    if (fila.length() > indice) fila.optString(indice).trim() else ""
+
+                val saldo = celda(8).filter { it.isDigit() }.toLongOrNull() ?: 0L
+                // Saldo en cero = deuda saldada. No genera recordatorio.
+                if (saldo <= 0L) return@mapNotNull null
+
+                VentaPendienteDePago(
+                    id = celda(13).ifBlank { "fila-$i" },
+                    nombre = celda(1).ifBlank { "Sin nombre" },
+                    saldo = saldo,
+                    fechaProximoPago = celda(10).ifBlank { null },
+                )
+            }
+        }
+
     // ---------- Encontrar o crear la hoja ----------
 
     private fun obtenerOCrearHoja(token: String): String? {

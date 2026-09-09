@@ -5,6 +5,10 @@
     <uses-permission android:name="android.permission.INTERNET" />
     <!-- Para saber si hay conexion y decidir si la venta va a la cola (Tarea 8). -->
     <uses-permission android:name="android.permission.ACCESS_NETWORK_STATE" />
+    <!-- Avisos de cobro. Desde Android 13 hay que pedirselo ademas a la usuaria. -->
+    <uses-permission android:name="android.permission.POST_NOTIFICATIONS" />
+    <!-- Para volver a programar los avisos cuando se reinicia el celular. -->
+    <uses-permission android:name="android.permission.RECEIVE_BOOT_COMPLETED" />
 
     <application
         android:allowBackup="true"
@@ -24,6 +28,15 @@
                 <category android:name="android.intent.category.LAUNCHER" />
             </intent-filter>
         </activity>
+
+        <receiver
+            android:name=".recordatorios.ReceptorDeRecordatorios"
+            android:enabled="true"
+            android:exported="false">
+            <intent-filter>
+                <action android:name="android.intent.action.BOOT_COMPLETED" />
+            </intent-filter>
+        </receiver>
     </application>
 
 </manifest>
