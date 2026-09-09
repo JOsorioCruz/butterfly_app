@@ -58,9 +58,11 @@ fun PantallaPrincipal(
     autorizado: Boolean,
     estado: EstadoDeGuardado,
     historial: List<RegistroLocal>,
+    cuantosErrores: Int,
     onAutorizar: () -> Unit,
     onCerrarSesion: () -> Unit,
     onGuardar: (String) -> Unit,
+    onVerErrores: () -> Unit,
     onProbarEjemplos: () -> Unit,
 ) {
     // El texto NO se borra al interpretar: si el registro sale incompleto, la dueña
@@ -77,8 +79,15 @@ fun PantallaPrincipal(
                     )
                 },
                 actions = {
-                    // El historial de errores se construye en la Tarea 6.
-                    TextButton(onClick = { }) { Text(stringResource(R.string.errores)) }
+                    TextButton(onClick = onVerErrores) {
+                        Text(
+                            if (cuantosErrores > 0) {
+                                stringResource(R.string.errores_con_cuenta, cuantosErrores)
+                            } else {
+                                stringResource(R.string.errores)
+                            },
+                        )
+                    }
                     TextButton(onClick = onCerrarSesion) {
                         Text(stringResource(R.string.cerrar_sesion))
                     }
@@ -272,9 +281,11 @@ private fun VistaPreviaPantallaPrincipal() {
             autorizado = true,
             estado = EstadoDeGuardado.Inactivo,
             historial = emptyList(),
+            cuantosErrores = 0,
             onAutorizar = {},
             onCerrarSesion = {},
             onGuardar = {},
+            onVerErrores = {},
             onProbarEjemplos = {},
         )
     }

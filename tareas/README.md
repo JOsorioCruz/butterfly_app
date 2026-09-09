@@ -19,7 +19,7 @@ antes de pasar a la siguiente**. No se entrega todo el desarrollo de una vez.
 | [3](tarea-3.md) | Gemini interpreta el texto + lógica de crédito | **B** | 🔨 Código listo — falta la clave de Gemini |
 | [4](tarea-4.md) | Guardado en Google Sheets + ID único | **C** | 🔨 Código listo — falta el ID del cliente Web |
 | [5](tarea-5.md) | Confirmación en pantalla e historial | **D** | 🔨 Código listo — falta el ID del cliente Web |
-| [6](tarea-6.md) | Historial de errores | — | ⬜ Pendiente |
+| [6](tarea-6.md) | Historial de errores | — | 🔨 Código listo — falta el ID del cliente Web |
 | [7](tarea-7.md) | Recordatorios de pagos a crédito | **G** | ⬜ Pendiente |
 | [8](tarea-8.md) | Modo offline y sincronización | **E** | ⬜ Pendiente |
 | [9](tarea-9.md) | APK instalable e instructivo | — | ⬜ Pendiente |

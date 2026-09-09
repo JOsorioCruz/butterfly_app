@@ -4,6 +4,7 @@
     <string name="guardar_venta">Guardar venta</string>
     <string name="ventas_recientes">Ventas recientes</string>
     <string name="errores">Errores</string>
+    <string name="errores_con_cuenta">Errores (%1$d)</string>
     <string name="ahora">Ahora</string>
     <string name="ejemplo_venta">venta de blusa: maria, talla m, 50 mil, credito, abono 20 mil</string>
     <string name="cerrar_sesion">Salir</string>
@@ -21,4 +22,12 @@
     <string name="pruebas_volver">Volver</string>
     <string name="pruebas_ejecutar">Ejecutar</string>
     <string name="historial_vacio">Todavía no hay ventas registradas. Escribe una arriba y presiona «Guardar venta».</string>
+    <string name="errores_titulo">Historial de errores</string>
+    <string name="errores_vacio">No hay errores. Todo lo que has guardado llegó bien a la hoja.</string>
+    <string name="errores_explicacion">Estas ventas NO se guardaron en la hoja. El mensaje original quedó aquí para que no se pierda.</string>
+    <string name="errores_reintentar">Reintentar</string>
+    <string name="errores_reintentando">Reintentando…</string>
+    <string name="errores_ya_resuelto">Ya se guardó al reintentar.</string>
+    <string name="errores_no_reintentable">Reintentarlo daría el mismo resultado. Escribe el mensaje de nuevo con los datos de la venta.</string>
+    <string name="errores_limpiar">Limpiar</string>
 </resources>

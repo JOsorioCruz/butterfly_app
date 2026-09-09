@@ -281,3 +281,30 @@ y el aviso de «vista de diseño». La pantalla ya guarda de verdad.
 
 ---
 
+## 2026-09-09 — #009 · Tarea 6: historial de errores
+
+**Decisiones que conviene no perder:**
+
+1. **El reintento reutiliza el identificador del intento fallido**, no genera uno nuevo.
+   Si aquella escritura sí llegó a Google pero la respuesta se perdió por el camino
+   —la conexión que se corta justo ahí—, el reintento consulta la hoja, encuentra ese ID
+   y responde «ya estaba». Con un ID nuevo, ese mismo escenario habría creado una
+   segunda fila: es exactamente el fallo que la Regla 2 existe para evitar.
+2. **«Incompleto» y «error» van a sitios distintos.** Incompleto va al historial de
+   ventas (falta un dato, la dueña lo corrige); error va al historial de errores (algo
+   se rompió: la IA, la red, el permiso). Mezclarlos haría que un problema técnico se
+   viera igual que un mensaje mal escrito, cuando lo que hay que hacer es distinto.
+3. **Los incidentes de tipo «no era una venta» no ofrecen reintentar.** Dar el mismo
+   texto daría el mismo resultado; la pantalla explica que hay que reescribir el mensaje.
+4. **Archivo separado del historial de ventas.** Son dos cosas distintas para la dueña,
+   y mezclarlas haría que un error enterrara las ventas buenas.
+
+**Limpieza:** la navegación pasó de banderas booleanas sueltas a un enum de tres
+pantallas, que ya empezaban a enredarse. La escritura segura de archivos JSON se extrajo
+a `util/ArchivoJson.kt`, compartida por los dos almacenes.
+
+**Resultado:** ⏳ Compila e instala. Sin login no se puede provocar un fallo real de
+Sheets para validarla.
+
+---
+

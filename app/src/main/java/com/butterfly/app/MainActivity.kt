@@ -18,22 +18,29 @@ import com.butterfly.app.auth.AutenticacionGoogle
 import com.butterfly.app.auth.ResultadoAutorizacion
 import com.butterfly.app.auth.ResultadoLogin
 import com.butterfly.app.datos.EstadoRegistro
+import com.butterfly.app.datos.HistorialDeErrores
 import com.butterfly.app.datos.HistorialLocal
 import com.butterfly.app.datos.HojaDeVentas
+import com.butterfly.app.datos.Incidente
 import com.butterfly.app.datos.RegistroLocal
 import com.butterfly.app.datos.ResultadoGuardado
+import com.butterfly.app.datos.TipoDeIncidente
 import com.butterfly.app.datos.nuevoIdDeRegistro
 import com.butterfly.app.ia.InterpretePorIA
 import com.butterfly.app.ia.ResultadoInterpretacion
 import com.butterfly.app.ia.ejecutarBancoDePruebas
 import com.butterfly.app.ui.EstadoDeGuardado
+import com.butterfly.app.ui.PantallaErrores
 import com.butterfly.app.ui.PantallaLogin
+import com.butterfly.app.ui.PantallaPrincipal
 import com.butterfly.app.ui.PantallaPruebas
 import com.butterfly.app.ui.ResultadoDeCaso
-import com.butterfly.app.ui.PantallaPrincipal
 import com.butterfly.app.ui.theme.TemaButterfly
 import com.butterfly.app.util.resumenDeVenta
 import kotlinx.coroutines.launch
+
+/** En que pantalla esta la app. La app tiene pocas, asi que no hace falta mas. */
+private enum class Pantalla { PRINCIPAL, ERRORES, PRUEBAS }
 
 class MainActivity : ComponentActivity() {
 
@@ -46,6 +53,7 @@ class MainActivity : ComponentActivity() {
         val interprete = InterpretePorIA()
         val hoja = HojaDeVentas(this)
         val historialLocal = HistorialLocal(this)
+        val errores = HistorialDeErrores(this)
 
         setContent {
             TemaButterfly {
@@ -58,17 +66,22 @@ class MainActivity : ComponentActivity() {
                 var cargando by remember { mutableStateOf(false) }
                 var mensajeDeError by remember { mutableStateOf<String?>(null) }
 
-                // Tareas 3 y 4: interpretar el texto y escribirlo en la hoja.
+                var pantalla by remember { mutableStateOf(Pantalla.PRINCIPAL) }
+
+                // Tareas 3, 4 y 5: interpretar, escribir en la hoja y dejar constancia.
                 var estadoDeGuardado by remember {
                     mutableStateOf<EstadoDeGuardado>(EstadoDeGuardado.Inactivo)
                 }
-                // Tarea 5: el historial vive en el celular, asi que sigue ahi al
-                // cerrar y reabrir la app.
                 var historial by remember { mutableStateOf(emptyList<RegistroLocal>()) }
-                LaunchedEffect(Unit) { historial = historialLocal.leer() }
+                var incidentes by remember { mutableStateOf(emptyList<Incidente>()) }
+                var reintentando by remember { mutableStateOf<String?>(null) }
+
+                LaunchedEffect(Unit) {
+                    historial = historialLocal.leer()
+                    incidentes = errores.leer()
+                }
 
                 // Validacion B: solo en la version de depuracion.
-                var enPantallaDePruebas by remember { mutableStateOf(false) }
                 var corriendoPruebas by remember { mutableStateOf(false) }
                 var resultadosDePruebas by remember { mutableStateOf(emptyList<ResultadoDeCaso>()) }
 
@@ -89,13 +102,12 @@ class MainActivity : ComponentActivity() {
                 }
 
                 /** Pide el permiso de escritura; abre la pantalla de Google si hace falta. */
-                fun pedirAutorizacion(alTerminar: () -> Unit = {}) {
+                fun pedirAutorizacion() {
                     alcance.launch {
                         when (val r = autenticacion.obtenerTokenDeAcceso()) {
                             is ResultadoAutorizacion.Concedida -> {
                                 tokenDeAcceso = r.tokenDeAcceso
                                 cargando = false
-                                alTerminar()
                             }
                             is ResultadoAutorizacion.HayQuePedirPermiso ->
                                 pedirPermiso.launch(
@@ -109,6 +121,12 @@ class MainActivity : ComponentActivity() {
                     }
                 }
 
+                /** Recarga lo que se muestra despues de guardar o reintentar. */
+                suspend fun refrescar() {
+                    historial = historialLocal.leer()
+                    incidentes = errores.leer()
+                }
+
                 val sesionActual = sesion
 
                 // Al abrir con sesion ya guardada, se renueva el token en silencio.
@@ -117,8 +135,8 @@ class MainActivity : ComponentActivity() {
                     if (sesionActual != null && tokenDeAcceso == null) pedirAutorizacion()
                 }
 
-                if (sesionActual == null) {
-                    PantallaLogin(
+                when {
+                    sesionActual == null -> PantallaLogin(
                         cargando = cargando,
                         mensajeDeError = mensajeDeError,
                         faltaConfiguracion = autenticacion.faltaConfiguracion,
@@ -143,8 +161,45 @@ class MainActivity : ComponentActivity() {
                             }
                         },
                     )
-                } else if (enPantallaDePruebas) {
-                    PantallaPruebas(
+
+                    pantalla == Pantalla.ERRORES -> PantallaErrores(
+                        incidentes = incidentes,
+                        reintentando = reintentando,
+                        onReintentar = { incidente ->
+                            reintentando = incidente.id
+                            alcance.launch {
+                                val resultado = interpretarYGuardar(
+                                    texto = incidente.textoOriginal,
+                                    interprete = interprete,
+                                    hoja = hoja,
+                                    historial = historialLocal,
+                                    errores = errores,
+                                    token = tokenDeAcceso,
+                                    // Se reutiliza el identificador del intento fallido:
+                                    // si aquella escritura si llego a Google pero la
+                                    // respuesta se perdio, esto lo detecta (Regla 2).
+                                    idExistente = incidente.id,
+                                )
+                                if (
+                                    resultado is EstadoDeGuardado.Guardada ||
+                                    resultado is EstadoDeGuardado.YaEstaba
+                                ) {
+                                    errores.marcarResuelto(incidente.id)
+                                }
+                                reintentando = null
+                                refrescar()
+                            }
+                        },
+                        onBorrarTodo = {
+                            alcance.launch {
+                                errores.borrarTodo()
+                                incidentes = errores.leer()
+                            }
+                        },
+                        onVolver = { pantalla = Pantalla.PRINCIPAL },
+                    )
+
+                    pantalla == Pantalla.PRUEBAS -> PantallaPruebas(
                         corriendo = corriendoPruebas,
                         resultados = resultadosDePruebas,
                         onEjecutar = {
@@ -155,24 +210,31 @@ class MainActivity : ComponentActivity() {
                                 corriendoPruebas = false
                             }
                         },
-                        onVolver = { enPantallaDePruebas = false },
+                        onVolver = { pantalla = Pantalla.PRINCIPAL },
                     )
-                } else {
-                    PantallaPrincipal(
+
+                    else -> PantallaPrincipal(
                         correo = sesionActual.correo,
                         autorizado = tokenDeAcceso != null,
                         estado = estadoDeGuardado,
                         historial = historial,
+                        cuantosErrores = incidentes.count { !it.resuelto },
                         onGuardar = { texto ->
                             estadoDeGuardado = EstadoDeGuardado.Trabajando
                             alcance.launch {
                                 estadoDeGuardado = interpretarYGuardar(
-                                    texto, interprete, hoja, historialLocal, tokenDeAcceso,
+                                    texto = texto,
+                                    interprete = interprete,
+                                    hoja = hoja,
+                                    historial = historialLocal,
+                                    errores = errores,
+                                    token = tokenDeAcceso,
                                 )
-                                historial = historialLocal.leer()
+                                refrescar()
                             }
                         },
-                        onProbarEjemplos = { enPantallaDePruebas = true },
+                        onVerErrores = { pantalla = Pantalla.ERRORES },
+                        onProbarEjemplos = { pantalla = Pantalla.PRUEBAS },
                         onAutorizar = { pedirAutorizacion() },
                         onCerrarSesion = {
                             alcance.launch {
@@ -184,7 +246,6 @@ class MainActivity : ComponentActivity() {
                         },
                     )
                 }
-
             }
         }
     }
@@ -193,28 +254,45 @@ class MainActivity : ComponentActivity() {
      * Las dos etapas que para la dueña son una sola accion: la IA lee el texto y, si
      * quedo completo, la venta se escribe en la hoja.
      *
-     * Si algo falla en cualquiera de las dos, NO se crea ninguna fila (punto 9).
+     * Garantia del punto 9: si algo falla en cualquiera de las dos, **no se crea
+     * ninguna fila** y el incidente queda en el historial de errores.
      */
     private suspend fun interpretarYGuardar(
         texto: String,
         interprete: InterpretePorIA,
         hoja: HojaDeVentas,
         historial: HistorialLocal,
+        errores: HistorialDeErrores,
         token: String?,
+        idExistente: String? = null,
     ): EstadoDeGuardado {
         // El identificador se genera ANTES de intentar mandar nada, para que un
         // reintento pueda reconocer la venta y no duplicarla (Regla 2).
-        val id = nuevoIdDeRegistro()
+        val id = idExistente ?: nuevoIdDeRegistro()
+        val ahora = System.currentTimeMillis()
+
+        suspend fun anotarIncidente(tipo: TipoDeIncidente, queFallo: String) {
+            errores.agregar(
+                Incidente(
+                    id = id,
+                    fecha = ahora,
+                    textoOriginal = texto,
+                    queFallo = queFallo,
+                    tipo = tipo,
+                ),
+            )
+        }
 
         return when (val lectura = interprete.interpretar(texto)) {
             is ResultadoInterpretacion.Incompleta -> {
                 val falta = lectura.venta.datosQueFaltan.joinToString(" y ")
-                // Se deja constancia del intento: no se creo ninguna fila en la hoja,
-                // pero la dueña puede ver que ese mensaje no quedo registrado.
+                // No es un error de la app, asi que no va al historial de errores:
+                // va al historial de ventas marcada como incompleta, para que la
+                // dueña vea que ese mensaje no quedo registrado.
                 historial.agregar(
                     RegistroLocal(
                         id = id,
-                        fecha = System.currentTimeMillis(),
+                        fecha = ahora,
                         resumen = "\"" + texto.trim() + "\"",
                         estado = EstadoRegistro.INCOMPLETA,
                         mensajeOriginal = texto,
@@ -224,44 +302,58 @@ class MainActivity : ComponentActivity() {
                 EstadoDeGuardado.Incompleta(falta)
             }
 
-            ResultadoInterpretacion.NoEsUnaVenta -> EstadoDeGuardado.NoEsUnaVenta
+            ResultadoInterpretacion.NoEsUnaVenta -> {
+                anotarIncidente(
+                    TipoDeIncidente.NO_ES_VENTA,
+                    "El mensaje no hablaba de una venta, así que no se registró nada.",
+                )
+                EstadoDeGuardado.NoEsUnaVenta
+            }
 
-            is ResultadoInterpretacion.Fallo -> EstadoDeGuardado.Error(lectura.mensaje)
+            is ResultadoInterpretacion.Fallo -> {
+                anotarIncidente(TipoDeIncidente.IA, lectura.mensaje)
+                EstadoDeGuardado.Error(lectura.mensaje)
+            }
 
             is ResultadoInterpretacion.Completa -> {
                 val resumen = resumenDeVenta(lectura.venta)
                 if (token == null) {
-                    EstadoDeGuardado.Error(
-                        "Falta el permiso para escribir en la hoja. Vuelve a entrar con Google.",
+                    val motivo =
+                        "Falta el permiso para escribir en la hoja. Vuelve a entrar con Google."
+                    anotarIncidente(TipoDeIncidente.HOJA, motivo)
+                    return EstadoDeGuardado.Error(motivo)
+                }
+
+                val guardado = hoja.guardar(lectura.venta, id, token)
+                val estado = when (guardado) {
+                    ResultadoGuardado.Guardada, ResultadoGuardado.YaEstaba ->
+                        EstadoRegistro.GUARDADA
+                    is ResultadoGuardado.SinConexion -> EstadoRegistro.PENDIENTE
+                    is ResultadoGuardado.Fallo -> null
+                }
+                // Una venta solo se anota como guardada cuando Google Sheets lo
+                // confirmo. Si fallo del todo, no se anota: va al historial de errores.
+                if (estado != null) {
+                    historial.agregar(
+                        RegistroLocal(
+                            id = id,
+                            fecha = ahora,
+                            resumen = resumen,
+                            estado = estado,
+                            mensajeOriginal = texto,
+                            venta = lectura.venta,
+                        ),
                     )
-                } else {
-                    val guardado = hoja.guardar(lectura.venta, id, token)
-                    val estado = when (guardado) {
-                        ResultadoGuardado.Guardada, ResultadoGuardado.YaEstaba ->
-                            EstadoRegistro.GUARDADA
-                        is ResultadoGuardado.SinConexion -> EstadoRegistro.PENDIENTE
-                        is ResultadoGuardado.Fallo -> null
-                    }
-                    // Una venta solo se anota como guardada cuando Google Sheets lo
-                    // confirmo. Si fallo, no se anota nada (Regla 2 y punto 9).
-                    if (estado != null) {
-                        historial.agregar(
-                            RegistroLocal(
-                                id = id,
-                                fecha = System.currentTimeMillis(),
-                                resumen = resumen,
-                                estado = estado,
-                                mensajeOriginal = texto,
-                                venta = lectura.venta,
-                            ),
-                        )
-                    }
-                    when (guardado) {
-                        ResultadoGuardado.Guardada -> EstadoDeGuardado.Guardada(resumen)
-                        ResultadoGuardado.YaEstaba -> EstadoDeGuardado.YaEstaba(resumen)
-                        is ResultadoGuardado.SinConexion ->
-                            EstadoDeGuardado.SinConexion(guardado.mensaje)
-                        is ResultadoGuardado.Fallo -> EstadoDeGuardado.Error(guardado.mensaje)
+                }
+
+                when (guardado) {
+                    ResultadoGuardado.Guardada -> EstadoDeGuardado.Guardada(resumen)
+                    ResultadoGuardado.YaEstaba -> EstadoDeGuardado.YaEstaba(resumen)
+                    is ResultadoGuardado.SinConexion ->
+                        EstadoDeGuardado.SinConexion(guardado.mensaje)
+                    is ResultadoGuardado.Fallo -> {
+                        anotarIncidente(TipoDeIncidente.HOJA, guardado.mensaje)
+                        EstadoDeGuardado.Error(guardado.mensaje)
                     }
                 }
             }

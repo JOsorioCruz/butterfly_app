@@ -1,6 +1,8 @@
 package com.butterfly.app.datos
 
 import android.content.Context
+import com.butterfly.app.util.escribirArrayJson
+import com.butterfly.app.util.leerArrayJson
 import java.io.File
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.sync.Mutex
@@ -58,22 +60,15 @@ class HistorialLocal(context: Context) {
         leer().filter { it.estado == EstadoRegistro.PENDIENTE }
 
     private fun leerDelDisco(): List<RegistroLocal> {
-        if (!archivo.exists()) return emptyList()
-        return runCatching {
-            val array = JSONArray(archivo.readText())
-            (0 until array.length()).mapNotNull { i ->
-                runCatching { RegistroLocal.deJson(array.getJSONObject(i)) }.getOrNull()
-            }
-        }.getOrDefault(emptyList())
+        val array = leerArrayJson(archivo)
+        return (0 until array.length()).mapNotNull { i ->
+            runCatching { RegistroLocal.deJson(array.getJSONObject(i)) }.getOrNull()
+        }
     }
 
     private fun escribirEnDisco(lista: List<RegistroLocal>) {
         val array = JSONArray()
         lista.forEach { array.put(it.aJson()) }
-        // Se escribe a un temporal y se renombra: si el celular se apaga a mitad de
-        // escritura, el historial anterior sigue intacto en vez de quedar a medias.
-        val temporal = File(archivo.parentFile, "historial.tmp")
-        temporal.writeText(array.toString())
-        temporal.renameTo(archivo)
+        escribirArrayJson(archivo, array)
     }
 }
