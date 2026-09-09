@@ -144,3 +144,35 @@ generado e instalado en el emulador.
 
 ---
 
+## 2026-09-09 — #005 · Tarea 2: código de inicio de sesión escrito
+
+**Cambio:** se añade el inicio de sesión con Google usando **Credential Manager**, que
+es el método vigente. El antiguo `GoogleSignInClient` está descontinuado y no se usa.
+
+**Librerías fijadas**, todas comprobando antes su `minCompileSdk` (regla de la #004):
+
+| Librería | Versión | Exige |
+|---|---|---|
+| `androidx.credentials` | 1.6.0 | API 35 ✅ |
+| `credentials-play-services-auth` | 1.6.0 | API 35 ✅ |
+| `play-services-auth` | 22.0.0 | API 1 ✅ |
+| `googleid` | 1.2.0 | ninguno ✅ |
+
+**Decisiones de diseño que conviene no perder:**
+
+1. **Identificarse y autorizar son dos pasos distintos.** Credential Manager dice
+   *quién* es la usuaria; `AuthorizationClient` concede *qué puede hacer la app* en su
+   Drive. Iniciar sesión NO da permiso de escritura. La app hace ambos al entrar.
+2. **No se guarda ningún token en el celular.** Caducan en una hora; se vuelven a pedir
+   al abrir la app, en silencio mientras el permiso siga concedido. Solo se guarda el
+   correo de la cuenta, que es lo que evita volver a pedir login (Validación A).
+3. **El ID del cliente Web se lee de `local.properties`**, igual que la clave de Gemini.
+   Si falta, la app **no se cae**: muestra en pantalla qué falta y dónde configurarlo.
+
+**Bloqueo actual:** falta que el dueño del proyecto cree el proyecto en Google Cloud y
+pase el **ID del cliente Web**. Hasta entonces la Validación A no puede empezar.
+
+**Resultado:** ⏳ Compila, instala y arranca. A la espera del ID.
+
+---
+

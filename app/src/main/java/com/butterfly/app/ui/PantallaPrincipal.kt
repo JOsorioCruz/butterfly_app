@@ -50,7 +50,12 @@ import com.butterfly.app.ui.theme.TemaButterfly
  */
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
-fun PantallaPrincipal() {
+fun PantallaPrincipal(
+    correo: String,
+    autorizado: Boolean,
+    onAutorizar: () -> Unit,
+    onCerrarSesion: () -> Unit,
+) {
     var texto by remember { mutableStateOf("") }
     val historial = remember { VENTAS_DE_EJEMPLO.toMutableStateList() }
     // Marcador de hora para la Tarea 1; en la Tarea 5 se usa la hora real.
@@ -71,6 +76,9 @@ fun PantallaPrincipal() {
                     TextButton(onClick = { }) {
                         Text(stringResource(R.string.errores))
                     }
+                    TextButton(onClick = onCerrarSesion) {
+                        Text(stringResource(R.string.cerrar_sesion))
+                    }
                 },
                 colors = TopAppBarDefaults.topAppBarColors(
                     containerColor = MaterialTheme.colorScheme.primaryContainer,
@@ -88,6 +96,12 @@ fun PantallaPrincipal() {
                 .padding(horizontal = 16.dp),
             verticalArrangement = Arrangement.spacedBy(12.dp),
         ) {
+            EstadoDeLaCuenta(
+                correo = correo,
+                autorizado = autorizado,
+                onAutorizar = onAutorizar,
+            )
+
             AvisoDeDiseno()
 
             OutlinedTextField(
@@ -135,6 +149,52 @@ fun PantallaPrincipal() {
             }
 
             Spacer(modifier = Modifier.height(16.dp))
+        }
+    }
+}
+
+/**
+ * Muestra con que cuenta esta trabajando la app y si ya tiene permiso para escribir
+ * en la hoja. Es lo que permite comprobar a simple vista la Validacion A.
+ */
+@Composable
+private fun EstadoDeLaCuenta(
+    correo: String,
+    autorizado: Boolean,
+    onAutorizar: () -> Unit,
+) {
+    Card(
+        modifier = Modifier
+            .fillMaxWidth()
+            .padding(top = 12.dp),
+        colors = CardDefaults.cardColors(
+            containerColor = if (autorizado) {
+                MaterialTheme.colorScheme.primaryContainer
+            } else {
+                MaterialTheme.colorScheme.errorContainer
+            },
+        ),
+    ) {
+        Column(modifier = Modifier.padding(14.dp)) {
+            Text(
+                text = correo,
+                style = MaterialTheme.typography.bodyMedium,
+                fontWeight = FontWeight.SemiBold,
+            )
+            Text(
+                text = stringResource(
+                    if (autorizado) R.string.cuenta_autorizada else R.string.cuenta_sin_permiso,
+                ),
+                style = MaterialTheme.typography.bodySmall,
+            )
+            if (!autorizado) {
+                TextButton(
+                    onClick = onAutorizar,
+                    modifier = Modifier.padding(top = 4.dp),
+                ) {
+                    Text(stringResource(R.string.dar_permiso))
+                }
+            }
         }
     }
 }
@@ -196,5 +256,12 @@ private fun FilaDeVenta(venta: VentaReciente) {
 @Preview(showBackground = true)
 @Composable
 private fun VistaPreviaPantallaPrincipal() {
-    TemaButterfly { PantallaPrincipal() }
+    TemaButterfly {
+        PantallaPrincipal(
+            correo = "dueña@gmail.com",
+            autorizado = true,
+            onAutorizar = {},
+            onCerrarSesion = {},
+        )
+    }
 }

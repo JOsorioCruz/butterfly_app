@@ -16,6 +16,11 @@ val localProperties = Properties().apply {
 }
 val geminiApiKey: String = localProperties.getProperty("GEMINI_API_KEY") ?: ""
 
+// ID del cliente OAuth de tipo *Web* de Google Cloud. Lo necesita Credential Manager
+// para identificar el login. Tambien sale de local.properties: no se escribe en el
+// codigo ni se sube al repositorio. Si falta, la app avisa en pantalla (Tarea 2).
+val googleWebClientId: String = localProperties.getProperty("GOOGLE_WEB_CLIENT_ID") ?: ""
+
 android {
     namespace = "com.butterfly.app"
     compileSdk = 36
@@ -28,6 +33,7 @@ android {
         versionName = "0.1.0"
 
         buildConfigField("String", "GEMINI_API_KEY", "\"$geminiApiKey\"")
+        buildConfigField("String", "GOOGLE_WEB_CLIENT_ID", "\"$googleWebClientId\"")
     }
 
     buildTypes {
@@ -69,6 +75,11 @@ dependencies {
     implementation(libs.androidx.ui.graphics)
     implementation(libs.androidx.ui.tooling.preview)
     implementation(libs.androidx.material3)
+
+    implementation(libs.androidx.credentials)
+    implementation(libs.androidx.credentials.play.services)
+    implementation(libs.google.id)
+    implementation(libs.play.services.auth)
 
     debugImplementation(libs.androidx.ui.tooling)
 }

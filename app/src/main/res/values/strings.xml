@@ -7,4 +7,12 @@
     <string name="ahora">Ahora</string>
     <string name="ejemplo_venta">venta de blusa: maria, talla m, 50 mil, credito, abono 20 mil</string>
     <string name="aviso_diseno">Vista de diseño (Tarea 1). Todavía no guarda nada en Google Sheets: el botón solo agrega la venta a esta lista para revisar cómo se ve.</string>
+    <string name="cerrar_sesion">Salir</string>
+    <string name="cuenta_autorizada">Conectada. La app puede escribir en tu hoja de cálculo.</string>
+    <string name="cuenta_sin_permiso">Falta el permiso para escribir en la hoja.</string>
+    <string name="dar_permiso">Dar permiso</string>
+    <string name="login_entrar">Entrar con Google</string>
+    <string name="login_explicacion">Inicia sesión con tu cuenta de Google. La app solo podrá ver y editar la hoja de cálculo que ella misma cree — nada más de tu Drive.</string>
+    <string name="login_falta_configuracion">Falta configurar el ID del cliente Web de Google en local.properties. Sin ese dato el inicio de sesión no puede funcionar. Ver tareas/tarea-2.md.</string>
+    <string name="login_aviso_verificacion">Si Google muestra un aviso de que no verificó la app, toca «Avanzado» y luego «Ir a la app». Es un paso que solo aparece la primera vez.</string>
 </resources>
