@@ -116,7 +116,10 @@ class HojaDeVentas(context: Context) {
      */
     suspend fun ventasConSaldoPendiente(token: String): List<VentaPendienteDePago>? =
         withContext(Dispatchers.IO) {
-            val hoja = idDeLaHoja ?: return@withContext emptyList()
+            // null significa "no se pudo comprobar", que NO es lo mismo que "no hay
+            // deudas". Si aqui se devolviera una lista vacia, quien llama entenderia
+            // que ya nadie debe nada y cancelaria todos los recordatorios.
+            val hoja = idDeLaHoja ?: return@withContext null
             val respuesta = peticionHttp(
                 url = "https://sheets.googleapis.com/v4/spreadsheets/$hoja/values/A2:N",
                 cabeceras = mapOf("Authorization" to "Bearer $token"),

@@ -33,11 +33,18 @@ class HistorialLocal(context: Context) {
         candado.withLock { leerDelDisco() }
     }
 
-    /** Agrega un registro nuevo al principio (lo mas reciente primero). */
+    /**
+     * Agrega un registro al principio (lo mas reciente primero).
+     *
+     * Si ya existia uno con el mismo identificador, lo sustituye en vez de duplicarlo:
+     * al reintentar una venta desde el historial de errores se reutiliza su
+     * identificador (Regla 2), y sin esto quedarian dos entradas de la misma venta.
+     */
     suspend fun agregar(registro: RegistroLocal): List<RegistroLocal> =
         withContext(Dispatchers.IO) {
             candado.withLock {
-                val lista = (listOf(registro) + leerDelDisco()).take(MAXIMO)
+                val sinRepetir = leerDelDisco().filterNot { it.id == registro.id }
+                val lista = (listOf(registro) + sinRepetir).take(MAXIMO)
                 escribirEnDisco(lista)
                 lista
             }

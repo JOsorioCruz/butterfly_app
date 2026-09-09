@@ -78,6 +78,8 @@ class ReceptorDeRecordatorios : BroadcastReceiver() {
      */
     private suspend fun deudasVivas(context: Context): List<VentaPendienteDePago> {
         val copia = UltimasDeudas(context)
+        // Si no se puede leer la hoja (sin red, permiso caducado, o la hoja todavia
+        // no existe), se avisa con la ultima copia en vez de no avisar nada.
         val token = tokenSinInteraccion(context) ?: return copia.leer()
         val deLaHoja = HojaDeVentas(context).ventasConSaldoPendiente(token)
             ?: return copia.leer()

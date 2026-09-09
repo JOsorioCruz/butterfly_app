@@ -427,3 +427,42 @@ y el ID del cliente Web y volver a ejecutar `assembleRelease`.
 
 ---
 
+## 2026-09-09 — #013 · Tarea 10: preparada + revisión previa del código
+
+**La Tarea 10 no se puede ejecutar todavía**, y no por falta de código: la Validación F
+exige siete días de calendario con la app funcionando en el celular de la dueña. No hay
+forma de adelantarla.
+
+Lo que sí se hizo:
+
+### 1. `SEGUIMIENTO-SEMANA.md`
+
+La hoja de control de la semana: 10 casillas obligatorias antes del día 1, registro
+diario, qué vigilar, y el criterio de aprobación. Incluye una tabla para anotar los
+mensajes que la IA entienda mal — esos casos valen más que los 15 inventados, porque son
+reales.
+
+### 2. Revisión del código antes de que entre en uso diario
+
+Se encontraron y corrigieron **dos fallos reales**:
+
+**Fallo A — «no pude comprobar» se confundía con «no hay deudas».**
+`ventasConSaldoPendiente` devolvía una lista vacía cuando todavía no se conocía el ID de
+la hoja. Quien llama interpreta la lista vacía como «ya nadie debe nada» y **cancela
+todos los recordatorios**. Ahora devuelve `null`, que significa «no se pudo comprobar», y
+los dos consumidores ya lo manejaban correctamente.
+
+**Fallo B — reintentar sin conexión duplicaba la entrada en el historial local.**
+Al reintentar una venta desde el historial de errores se reutiliza su identificador
+(Regla 2), pero `HistorialLocal.agregar` no comprobaba si ya existía uno con ese
+identificador: quedaban dos entradas de la misma venta en la lista del celular. La hoja
+nunca se habría duplicado —eso lo protege la comprobación del ID—, pero la dueña habría
+visto la misma venta dos veces y no habría sabido cuál creer. Ahora sustituye en vez de
+duplicar.
+
+Ambos compilan y están confirmados.
+
+**Resultado:** 📋 Preparada. No puede empezar hasta que la app funcione en el celular.
+
+---
+
