@@ -122,7 +122,14 @@ motivo.
 ### 6. Al firmar el APK final (Tarea 9)
 
 El APK de la Tarea 9 se firma con un almacén **distinto** al de depuración, así que
-tendrá **otra huella SHA-1**. Habrá que agregar un segundo cliente Android en la consola
-con esa huella, o el login dejará de funcionar en el APK instalado. Queda anotado aquí
-para no descubrirlo el último día.
+tiene **otra huella SHA-1**. Hay que agregar un **segundo cliente Android** en la consola
+con esa huella, o **el login no funcionará en el APK instalado en el celular**, aunque
+funcione perfectamente durante las pruebas.
+
+Las dos huellas que hay que registrar, ambas con el paquete `com.butterfly.app`:
+
+| Para qué | SHA-1 |
+|---|---|
+| Pruebas (depuración) | `77:41:FE:31:73:80:8D:0F:B1:87:EA:D2:8B:95:E0:D2:71:FB:26:3A` |
+| **APK instalable (release)** | `C8:5E:54:3A:75:EF:47:9C:C7:55:C8:33:6F:CE:CB:19:4D:AD:79:74` |
 

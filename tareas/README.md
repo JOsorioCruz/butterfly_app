@@ -22,7 +22,7 @@ antes de pasar a la siguiente**. No se entrega todo el desarrollo de una vez.
 | [6](tarea-6.md) | Historial de errores | — | 🔨 Código listo — falta el ID del cliente Web |
 | [7](tarea-7.md) | Recordatorios de pagos a crédito | **G** | 🔨 Código listo — falta el ID del cliente Web |
 | [8](tarea-8.md) | Modo offline y sincronización | **E** | 🔨 Código listo — falta el ID del cliente Web |
-| [9](tarea-9.md) | APK instalable e instructivo | — | ⬜ Pendiente |
+| [9](tarea-9.md) | APK instalable e instructivo | — | 🔨 APK firmado + instructivo listos — falta configurar las claves |
 | [10](tarea-10.md) | Una semana de uso real | **F** | ⬜ Pendiente |
 
 ## Mapa de dependencias

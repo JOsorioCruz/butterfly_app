@@ -25,6 +25,15 @@ val googleWebClientId: String = localProperties.getProperty("GOOGLE_WEB_CLIENT_I
 // si el que trae por defecto deja de existir, se cambia aqui sin tocar el codigo.
 val geminiModelo: String = localProperties.getProperty("GEMINI_MODELO") ?: "gemini-2.5-flash"
 
+// Datos de firma del APK que se instala en el celular. Viven en keystore.properties,
+// que NO se sube al control de versiones. Si el archivo no existe, la version de
+// release simplemente no se firma (util para compilar sin tener las claves a mano).
+val propiedadesDeFirma = Properties().apply {
+    val archivo = rootProject.file("keystore.properties")
+    if (archivo.exists()) archivo.inputStream().use { load(it) }
+}
+val hayFirma = propiedadesDeFirma.getProperty("almacen") != null
+
 android {
     namespace = "com.butterfly.app"
     compileSdk = 36
@@ -41,8 +50,25 @@ android {
         buildConfigField("String", "GEMINI_MODELO", "\"$geminiModelo\"")
     }
 
+    signingConfigs {
+        if (hayFirma) {
+            create("butterfly") {
+                storeFile = rootProject.file(propiedadesDeFirma.getProperty("almacen"))
+                storePassword = propiedadesDeFirma.getProperty("clave")
+                keyAlias = propiedadesDeFirma.getProperty("alias")
+                keyPassword = propiedadesDeFirma.getProperty("clave")
+            }
+        }
+    }
+
     buildTypes {
         release {
+            if (hayFirma) signingConfig = signingConfigs.getByName("butterfly")
+
+            // La minificacion queda desactivada a proposito: puede romper en silencio
+            // el codigo que usa reflexion (las librerias de Google) y este proyecto
+            // todavia no tiene pruebas que lo detecten. Activarla es una decision para
+            // cuando la app lleve tiempo funcionando.
             isMinifyEnabled = false
             proguardFiles(
                 getDefaultProguardFile("proguard-android-optimize.txt"),

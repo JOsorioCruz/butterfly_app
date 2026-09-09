@@ -385,3 +385,45 @@ el celular real: el emulador no reproduce la pérdida de señal de la calle.
 
 ---
 
+## 2026-09-09 — #012 · Tarea 9: APK firmado e instructivo
+
+**Hecho:**
+
+- Almacén de firma `butterfly-firma.jks` creado, válido hasta 2054. La contraseña vive
+  en `keystore.properties`, fuera del control de versiones junto con el `.jks`.
+- `assembleRelease` produce un APK firmado de 10 MB, verificado con `apksigner`,
+  instalado y arrancado.
+- `INSTRUCTIVO.md` escrito en lenguaje llano, cubriendo los seis puntos del punto 12 de
+  la especificación más el respaldo mensual.
+
+**Decisiones que conviene no perder:**
+
+1. **Minificación desactivada a propósito.** Puede romper en silencio el código que usa
+   reflexión (las librerías de Google), y este proyecto todavía no tiene pruebas que lo
+   detecten. Activarla es una decisión para cuando la app lleve tiempo funcionando.
+2. **La firma es opcional en el build.** Si `keystore.properties` no existe, la versión
+   de release simplemente no se firma, en vez de fallar la compilación. Así el proyecto
+   se puede compilar sin tener las claves a mano.
+3. **El instructivo nombra las variantes reales del menú de Android** («Permitir desde
+   esta fuente» / «Instalar apps desconocidas» / «Fuentes desconocidas»), porque el
+   nombre cambia según la marca del celular y una guía con un solo nombre falla en la
+   mitad de los equipos.
+4. **Incluye el paso de Play Protect**, que aparece al instalar un APK de fuera de la
+   tienda y no estaba previsto en la especificación.
+5. **Incluye cómo quitar la restricción de batería**, con las marcas concretas que la
+   aplican. Sin eso, los recordatorios de la Tarea 7 pueden no llegar nunca.
+
+**⚠️ Hallazgo importante — la huella de release:** el APK instalable se firma con un
+almacén distinto al de depuración, así que tiene **otra huella SHA-1**. Hay que
+registrar **las dos** en Google Cloud, o el login funcionará en las pruebas y **fallará
+justo en el APK que se instala en el celular**. Ambas quedaron anotadas en `tarea-2.md`.
+
+**⚠️ Estado real del APK generado:** compila, se firma, se instala y arranca — pero
+`local.properties` está vacío, así que **muestra la pantalla de «falta configurar» y no
+puede hacer nada más**. Para que sea el APK definitivo hay que poner la clave de Gemini
+y el ID del cliente Web y volver a ejecutar `assembleRelease`.
+
+**Resultado:** ⏳ Entregables listos. El APK no es utilizable hasta configurar las claves.
+
+---
+
