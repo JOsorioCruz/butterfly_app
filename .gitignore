@@ -28,3 +28,9 @@ out/
 
 ### Mac OS ###
 .DS_Store
+
+### Capturas y adjuntos sueltos en la raiz (depuracion, no son parte del proyecto) ###
+/img.png
+/img_*.png
+/*.pdf
+/WhatsApp Image*.jpeg
